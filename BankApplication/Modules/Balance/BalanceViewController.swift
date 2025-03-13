@@ -105,15 +105,14 @@ class BalanceViewController: UIViewController {
     }
 
     @objc private func transferButtonTapped() {
-        let users = [
-            User(id: "1", username: "user1", password: "password1"),
-            User(id: "2", username: "user2", password: "password2"),
-            User(id: "3", username: "user3", password: "password3")
-        ]
+        let users = UserManager.shared.getAllUsers()
+        
         let balanceManager = BalanceManager(users: users)
         let transferManager = TransferManager(users: users)
+        
         let transferViewModel = TransferViewModel(balanceManager: balanceManager, transferManager: transferManager)
         let transferVC = TransferViewController(viewModel: transferViewModel, user: user)
+        
         self.navigationController?.pushViewController(transferVC, animated: true)
     }
     

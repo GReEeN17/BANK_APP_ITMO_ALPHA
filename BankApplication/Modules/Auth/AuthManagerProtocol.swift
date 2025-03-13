@@ -1,5 +1,5 @@
 protocol AuthManagerProtocol {
-    func login(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void)
+    func login(email: String, password: String, completion: @escaping (Result<User, Error>) -> Void)
     func logout(completion: @escaping (Result<Void, Error>) -> Void)
-    func register(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void)
+    func register(email: String, username: String, password: String, completion: @escaping (Result<User, Error>) -> Void)
 }

@@ -9,6 +9,9 @@ class AuthViewController: UIViewController {
     private let registerButton = UIButton(type: .system)
     private let logoutButton = UIButton(type: .system)
 
+    private let emailErrorLabel = UILabel()
+    private let passwordErrorLabel = UILabel()
+
     init(viewModel: AuthViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -22,18 +25,29 @@ class AuthViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
 
-        configureTextField(usernameTextField, placeholder: "Username")
+        setupUI()
+        setupTextFields()
+    }
+
+    private func setupUI() {
+        configureTextField(usernameTextField, placeholder: "Email")
         configureTextField(passwordTextField, placeholder: "Password")
         passwordTextField.isSecureTextEntry = true
+
         configureButton(loginButton, title: "Login", action: #selector(loginButtonTapped))
         configureButton(registerButton, title: "Register", action: #selector(registerButtonTapped))
         configureButton(logoutButton, title: "Logout", action: #selector(logoutButtonTapped))
+
+        configureErrorLabel(emailErrorLabel, text: "Invalid email")
+        configureErrorLabel(passwordErrorLabel, text: "Password must be at least 6 characters")
 
         view.addSubview(usernameTextField)
         view.addSubview(passwordTextField)
         view.addSubview(loginButton)
         view.addSubview(registerButton)
         view.addSubview(logoutButton)
+        view.addSubview(emailErrorLabel)
+        view.addSubview(passwordErrorLabel)
 
         NSLayoutConstraint.activate([
             usernameTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -46,8 +60,16 @@ class AuthViewController: UIViewController {
             passwordTextField.widthAnchor.constraint(equalToConstant: 250),
             passwordTextField.heightAnchor.constraint(equalToConstant: 40),
 
+            emailErrorLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emailErrorLabel.topAnchor.constraint(equalTo: usernameTextField.bottomAnchor, constant: 5),
+            emailErrorLabel.widthAnchor.constraint(equalToConstant: 250),
+
+            passwordErrorLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            passwordErrorLabel.topAnchor.constraint(equalTo: passwordTextField.bottomAnchor, constant: 5),
+            passwordErrorLabel.widthAnchor.constraint(equalToConstant: 250),
+
             loginButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loginButton.topAnchor.constraint(equalTo: passwordTextField.bottomAnchor, constant: 30),
+            loginButton.topAnchor.constraint(equalTo: passwordErrorLabel.bottomAnchor, constant: 30),
             loginButton.widthAnchor.constraint(equalToConstant: 200),
             loginButton.heightAnchor.constraint(equalToConstant: 40),
 
@@ -62,7 +84,33 @@ class AuthViewController: UIViewController {
             logoutButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
-    
+
+    private func setupTextFields() {
+        usernameTextField.addTarget(self, action: #selector(emailTextFieldDidChange), for: .editingChanged)
+        passwordTextField.addTarget(self, action: #selector(passwordTextFieldDidChange), for: .editingChanged)
+    }
+
+    @objc private func emailTextFieldDidChange() {
+        let isValid = viewModel.validateEmail(usernameTextField.text)
+        emailErrorLabel.isHidden = isValid
+        updateButtonStates()
+    }
+
+    @objc private func passwordTextFieldDidChange() {
+        let isValid = viewModel.validatePassword(passwordTextField.text)
+        passwordErrorLabel.isHidden = isValid
+        updateButtonStates()
+    }
+
+    private func updateButtonStates() {
+        let isEmailValid = viewModel.validateEmail(usernameTextField.text)
+        let isPasswordValid = viewModel.validatePassword(passwordTextField.text)
+        loginButton.isEnabled = isEmailValid && isPasswordValid
+        registerButton.isEnabled = isEmailValid && isPasswordValid
+        loginButton.alpha = loginButton.isEnabled ? 1.0 : 0.5
+        registerButton.alpha = registerButton.isEnabled ? 1.0 : 0.5
+    }
+
     private func configureTextField(_ textField: UITextField, placeholder: String) {
         textField.placeholder = placeholder
         textField.borderStyle = .roundedRect
@@ -91,9 +139,17 @@ class AuthViewController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
     }
 
+    private func configureErrorLabel(_ label: UILabel, text: String) {
+        label.text = text
+        label.textColor = .red
+        label.font = UIFont.systemFont(ofSize: 12)
+        label.isHidden = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+    }
+
     @objc private func loginButtonTapped() {
-        guard let username = usernameTextField.text, let password = passwordTextField.text else { return }
-        viewModel.login(username: username, password: password) { [weak self] result in
+        guard let email = usernameTextField.text, let password = passwordTextField.text else { return }
+        viewModel.login(email: email, password: password) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let user):
@@ -106,17 +162,9 @@ class AuthViewController: UIViewController {
     }
 
     @objc private func registerButtonTapped() {
-        guard let username = usernameTextField.text, let password = passwordTextField.text else { return }
-        viewModel.register(username: username, password: password) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let user):
-                    self?.navigateToBalanceScreen(user: user)
-                case .failure(let error):
-                    self?.showError(message: error.localizedDescription)
-                }
-            }
-        }
+        let registrationViewModel = AuthViewModel(authService: AuthManager())
+        let registrationVC = RegistrationViewController(viewModel: registrationViewModel)
+        navigationController?.pushViewController(registrationVC, animated: true)
     }
 
     @objc private func logoutButtonTapped() {
