@@ -1,21 +1,20 @@
 import Foundation
-class AuthViewModel {
-    private let authService: AuthServiceProtocol
+class AuthViewModel: AuthViewModelProtocol {
+    private let authManager: AuthManagerProtocol
     
-    init(authService: AuthServiceProtocol) {
-        self.authService = authService
+    init(authService: AuthManagerProtocol) {
+        self.authManager = authService
     }
     
     func login(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
-        authService.login(username: username, password: password, completion: completion)
+        authManager.login(username: username, password: password, completion: completion)
     }
     
     func logout(completion: @escaping (Result<Void, Error>) -> Void) {
-        authService.logout(completion: completion)
+        authManager.logout(completion: completion)
     }
     
     func register(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
-        let newUser = User(id: UUID().uuidString, username: username, password: password)
-        completion(.success(newUser))
+        authManager.register(username: username, password: password, completion: completion)
     }
 }

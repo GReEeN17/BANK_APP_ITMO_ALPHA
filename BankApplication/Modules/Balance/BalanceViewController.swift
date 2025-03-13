@@ -1,14 +1,14 @@
 import UIKit
 
 class BalanceViewController: UIViewController {
-    private let viewModel: BalanceViewModel
+    private let viewModel: BalanceViewModelProtocol
     private let user: User
 
     private let balanceLabel = UILabel()
     private let transactionsLabel = UILabel()
     private let transferButton = UIButton(type: .system)
 
-    init(viewModel: BalanceViewModel, user: User) {
+    init(viewModel: BalanceViewModelProtocol, user: User) {
         self.viewModel = viewModel
         self.user = user
         super.init(nibName: nil, bundle: nil)
@@ -111,7 +111,8 @@ class BalanceViewController: UIViewController {
             User(id: "3", username: "user3", password: "password3")
         ]
         let balanceManager = BalanceManager(users: users)
-        let transferViewModel = TransferViewModel(balanceManager: balanceManager, users: users)
+        let transferManager = TransferManager(users: users)
+        let transferViewModel = TransferViewModel(balanceManager: balanceManager, transferManager: transferManager)
         let transferVC = TransferViewController(viewModel: transferViewModel, user: user)
         self.navigationController?.pushViewController(transferVC, animated: true)
     }

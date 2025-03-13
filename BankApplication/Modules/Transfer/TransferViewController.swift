@@ -1,14 +1,15 @@
 import UIKit
 
 class TransferViewController: UIViewController {
-    private let viewModel: TransferViewModel
+    private let viewModel: TransferViewModelProtocol
     private let user: User
+    private var users: [User] = []
 
     private let tableView = UITableView()
     private let amountTextField = UITextField()
     private let transferButton = UIButton(type: .system)
 
-    init(viewModel: TransferViewModel, user: User) {
+    init(viewModel: TransferViewModelProtocol, user: User) {
         self.viewModel = viewModel
         self.user = user
         super.init(nibName: nil, bundle: nil)
@@ -20,6 +21,7 @@ class TransferViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        loadUsers()
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
 
         configureTextField(amountTextField, placeholder: "Enter amount")
@@ -81,21 +83,38 @@ class TransferViewController: UIViewController {
         button.layer.shadowRadius = 4.0
         button.translatesAutoresizingMaskIntoConstraints = false
     }
+    
+    private func loadUsers() {
+        viewModel.getUsers { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let users):
+                    self?.users = users
+                    self?.tableView.reloadData()
+                case .failure(let error):
+                    self?.showAlert(message: "Failed to load users: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
 
     @objc private func transferButtonTapped() {
-        guard let amountText = amountTextField.text, let amount = Double(amountText) else {
+        guard let amount = viewModel.validateAmount(amountTextField.text) else {
             showAlert(message: "Please enter a valid amount.")
             return
         }
 
         if let selectedIndexPath = tableView.indexPathForSelectedRow {
-            let recipient = viewModel.users[selectedIndexPath.row]
+            let recipient = users[selectedIndexPath.row]
             viewModel.transferMoney(from: user.id, to: recipient.id, amount: amount) { [weak self] result in
-                switch result {
-                case .success:
-                    self?.showAlert(message: "Transfer successful!")
-                case .failure(let error):
-                    self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        self?.showAlert(message: "Transfer successful!")
+                    case .failure(let error):
+                        self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
+                    }
                 }
             }
         } else {
@@ -112,17 +131,17 @@ class TransferViewController: UIViewController {
 
 extension TransferViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.users.count
+        return users.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = viewModel.users[indexPath.row].username
+        cell.textLabel?.text = users[indexPath.row].username
         cell.backgroundColor = .clear
         cell.textLabel?.textColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
         return cell
     }
-
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
     }

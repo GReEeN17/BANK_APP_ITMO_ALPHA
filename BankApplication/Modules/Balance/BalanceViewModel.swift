@@ -1,4 +1,4 @@
-class BalanceViewModel {
+class BalanceViewModel: BalanceViewModelProtocol{
     private let balanceManager: BalanceManagerProtocol
 
     init(balanceManager: BalanceManagerProtocol) {

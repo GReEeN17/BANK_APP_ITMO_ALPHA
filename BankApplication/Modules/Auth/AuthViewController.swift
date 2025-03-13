@@ -1,7 +1,7 @@
 import UIKit
 
 class AuthViewController: UIViewController {
-    private let viewModel: AuthViewModel
+    private let viewModel: AuthViewModelProtocol
 
     private let usernameTextField = UITextField()
     private let passwordTextField = UITextField()
@@ -9,7 +9,7 @@ class AuthViewController: UIViewController {
     private let registerButton = UIButton(type: .system)
     private let logoutButton = UIButton(type: .system)
 
-    init(viewModel: AuthViewModel) {
+    init(viewModel: AuthViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
@@ -62,7 +62,7 @@ class AuthViewController: UIViewController {
             logoutButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
-
+    
     private func configureTextField(_ textField: UITextField, placeholder: String) {
         textField.placeholder = placeholder
         textField.borderStyle = .roundedRect
@@ -93,51 +93,61 @@ class AuthViewController: UIViewController {
 
     @objc private func loginButtonTapped() {
         guard let username = usernameTextField.text, let password = passwordTextField.text else { return }
-        viewModel.login(username: username, password: password) { result in
-            switch result {
-            case .success(let user):
-                print("User logged in: \(user.username)")
-                self.navigateToBalanceScreen(user: user)
-            case .failure(let error):
-                print("Login failed: \(error.localizedDescription)")
+        viewModel.login(username: username, password: password) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let user):
+                    self?.navigateToBalanceScreen(user: user)
+                case .failure(let error):
+                    self?.showError(message: error.localizedDescription)
+                }
             }
         }
     }
 
     @objc private func registerButtonTapped() {
         guard let username = usernameTextField.text, let password = passwordTextField.text else { return }
-        viewModel.register(username: username, password: password) { result in
-            switch result {
-            case .success(let user):
-                print("User registered: \(user.username)")
-                self.navigateToBalanceScreen(user: user)
-            case .failure(let error):
-                print("Registration failed: \(error.localizedDescription)")
+        viewModel.register(username: username, password: password) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let user):
+                    self?.navigateToBalanceScreen(user: user)
+                case .failure(let error):
+                    self?.showError(message: error.localizedDescription)
+                }
             }
         }
     }
 
     @objc private func logoutButtonTapped() {
-        viewModel.logout { result in
-            switch result {
-            case .success:
-                print("User logged out")
-            case .failure(let error):
-                print("Logout failed: \(error.localizedDescription)")
+        viewModel.logout { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self?.navigateToAuthScreen()
+                case .failure(let error):
+                    self?.showError(message: error.localizedDescription)
+                }
             }
         }
     }
 
     private func navigateToBalanceScreen(user: User) {
-        let users = [
-            User(id: "1", username: "user1", password: "password1"),
-            User(id: "2", username: "user2", password: "password2"),
-            User(id: "3", username: "user3", password: "password3")
-        ]
-        let balanceManager = BalanceManager(users: users)
+        let balanceManager = BalanceManager(users: [user])
         let balanceViewModel = BalanceViewModel(balanceManager: balanceManager)
         let balanceVC = BalanceViewController(viewModel: balanceViewModel, user: user)
-        
-        self.navigationController?.pushViewController(balanceVC, animated: true)
+        navigationController?.pushViewController(balanceVC, animated: true)
+    }
+
+    private func navigateToAuthScreen() {
+        let authViewModel = AuthViewModel(authService: AuthManager())
+        let authVC = AuthViewController(viewModel: authViewModel)
+        navigationController?.setViewControllers([authVC], animated: true)
+    }
+
+    private func showError(message: String) {
+        let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
     }
 }

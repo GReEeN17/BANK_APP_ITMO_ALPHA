@@ -62,7 +62,7 @@ class ProfileViewController: UIViewController {
         if let authVC = navigationController?.viewControllers.first(where: { $0 is AuthViewController }) {
             navigationController?.popToViewController(authVC, animated: true)
         } else {
-            let authViewModel = AuthViewModel(authService: AuthService())
+            let authViewModel = AuthViewModel(authService: AuthManager())
             let authVC = AuthViewController(viewModel: authViewModel)
             navigationController?.setViewControllers([authVC], animated: true)
         }

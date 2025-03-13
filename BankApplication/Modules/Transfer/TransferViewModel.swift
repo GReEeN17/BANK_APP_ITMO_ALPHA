@@ -1,10 +1,14 @@
-class TransferViewModel {
+class TransferViewModel: TransferViewModelProtocol {
     private let balanceManager: BalanceManagerProtocol
-    let users: [User]
+    private let transferManager: TransferManagerProtocol
 
-    init(balanceManager: BalanceManagerProtocol, users: [User]) {
+    init(balanceManager: BalanceManagerProtocol, transferManager: TransferManagerProtocol) {
         self.balanceManager = balanceManager
-        self.users = users
+        self.transferManager = transferManager
+    }
+    
+    func getUsers(completion: @escaping (Result<[User], Error>) -> Void) {
+        transferManager.getUsers(completion: completion)
     }
     
     func getTransactions(userId: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {
@@ -24,20 +28,13 @@ class TransferViewModel {
     }
 
     func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void) {
-        balanceManager.withdraw(userId: senderId, amount: amount) { withdrawResult in
-            switch withdrawResult {
-            case .success:
-                self.balanceManager.deposit(userId: recipientId, amount: amount) { depositResult in
-                    switch depositResult {
-                    case .success:
-                        completion(.success(()))
-                    case .failure(let error):
-                        completion(.failure(error))
-                    }
-                }
-            case .failure(let error):
-                completion(.failure(error))
-            }
+        balanceManager.transferMoney(from: senderId, to: recipientId, amount: amount, completion: completion)
+    }
+    
+    func validateAmount(_ amountText: String?) -> Double? {
+        guard let amountText = amountText, let amount = Double(amountText) else {
+            return nil
         }
+        return amount
     }
 }

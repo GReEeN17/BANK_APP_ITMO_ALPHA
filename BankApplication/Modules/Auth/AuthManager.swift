@@ -1,6 +1,6 @@
 import Foundation
 
-class AuthService: AuthServiceProtocol {
+class AuthManager: AuthManagerProtocol {
     private let users: [User] = [
         User(id: "1", username: "user1", password: "password1"),
         User(id: "2", username: "user2", password: "password2"),
@@ -23,5 +23,10 @@ class AuthService: AuthServiceProtocol {
 
     func logout(completion: @escaping (Result<Void, Error>) -> Void) {
         completion(.success(()))
+    }
+    
+    func register(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
+        let newUser = User(id: UUID().uuidString, username: username, password: password)
+        completion(.success(newUser))
     }
 }
