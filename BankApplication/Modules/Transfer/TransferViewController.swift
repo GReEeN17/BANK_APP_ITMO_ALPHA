@@ -1,17 +1,17 @@
 import UIKit
+import Combine
 
 class TransferViewController: UIViewController {
     private let viewModel: TransferViewModelProtocol
-    private let user: User
-    private var users: [User] = []
+    private var cancellables = Set<AnyCancellable>()
 
     private let tableView = UITableView()
     private let amountTextField = UITextField()
     private let transferButton = UIButton(type: .system)
+    private var tableManager: TableManager!
 
-    init(viewModel: TransferViewModelProtocol, user: User) {
+    init(viewModel: TransferViewModelProtocol) {
         self.viewModel = viewModel
-        self.user = user
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -21,16 +21,12 @@ class TransferViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadUsers()
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
 
         configureTextField(amountTextField, placeholder: "Enter amount")
-
         configureButton(transferButton, title: "Transfer", action: #selector(transferButtonTapped))
 
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableManager = TableManager(tableView: tableView)
         tableView.backgroundColor = .clear
         tableView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -54,6 +50,31 @@ class TransferViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
         ])
+
+        bindViewModel()
+        loadUsers()
+    }
+
+    private func bindViewModel() {
+        viewModel.usersPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] users in
+                let cellModels = users.map { TableCellModel(title: $0.username, isSelected: false) }
+                self?.tableManager.update(with: cellModels)
+            }
+            .store(in: &cancellables)
+
+        viewModel.transferResult
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                switch result {
+                case .success:
+                    self?.showAlert(message: "Transfer successful!")
+                case .failure(let error):
+                    self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func configureTextField(_ textField: UITextField, placeholder: String) {
@@ -83,21 +104,10 @@ class TransferViewController: UIViewController {
         button.layer.shadowRadius = 4.0
         button.translatesAutoresizingMaskIntoConstraints = false
     }
-    
+
     private func loadUsers() {
-        viewModel.getUsers { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let users):
-                    self?.users = users
-                    self?.tableView.reloadData()
-                case .failure(let error):
-                    self?.showAlert(message: "Failed to load users: \(error.localizedDescription)")
-                }
-            }
-        }
+        viewModel.getUsers()
     }
-    
 
     @objc private func transferButtonTapped() {
         guard let amount = viewModel.validateAmount(amountTextField.text) else {
@@ -106,8 +116,8 @@ class TransferViewController: UIViewController {
         }
 
         if let selectedIndexPath = tableView.indexPathForSelectedRow {
-            let recipient = users[selectedIndexPath.row]
-            viewModel.transferMoney(from: user.id, to: recipient.id, amount: amount) { [weak self] result in
+            let recipient = viewModel.users[selectedIndexPath.row]
+            viewModel.transferMoney(from: viewModel.user.id, to: recipient.id, amount: amount) { [weak self] result in
                 DispatchQueue.main.async {
                     switch result {
                     case .success:
@@ -126,27 +136,5 @@ class TransferViewController: UIViewController {
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
-    }
-}
-
-extension TransferViewController: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return users.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = users[indexPath.row].username
-        cell.backgroundColor = .clear
-        cell.textLabel?.textColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-    }
-
-    func tableView(_ tableView: UITableView, didDeselectRowAt indexPath: IndexPath) {
-        tableView.cellForRow(at: indexPath)?.accessoryType = .none
     }
 }

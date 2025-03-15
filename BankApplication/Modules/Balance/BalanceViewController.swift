@@ -110,8 +110,8 @@ class BalanceViewController: UIViewController {
         let balanceManager = BalanceManager(users: users)
         let transferManager = TransferManager(users: users)
         
-        let transferViewModel = TransferViewModel(balanceManager: balanceManager, transferManager: transferManager)
-        let transferVC = TransferViewController(viewModel: transferViewModel, user: user)
+        let transferViewModel = TransferViewModel(balanceManager: balanceManager, transferManager: transferManager, user: user)
+        let transferVC = TransferViewController(viewModel: transferViewModel)
         
         self.navigationController?.pushViewController(transferVC, animated: true)
     }

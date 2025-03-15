@@ -1,14 +1,32 @@
+import Combine
+
 class TransferViewModel: TransferViewModelProtocol {
     private let balanceManager: BalanceManagerProtocol
     private let transferManager: TransferManagerProtocol
-
-    init(balanceManager: BalanceManagerProtocol, transferManager: TransferManagerProtocol) {
-        self.balanceManager = balanceManager
-        self.transferManager = transferManager
+    let user: User
+    
+    @Published private(set) var users: [User] = []
+    var usersPublisher: AnyPublisher<[User], Never> {
+        $users.eraseToAnyPublisher()
     }
     
-    func getUsers(completion: @escaping (Result<[User], Error>) -> Void) {
-        transferManager.getUsers(completion: completion)
+    var transferResult = PassthroughSubject<Result<Void, Error>, Never>()
+
+    init(balanceManager: BalanceManagerProtocol, transferManager: TransferManagerProtocol, user: User) {
+        self.balanceManager = balanceManager
+        self.transferManager = transferManager
+        self.user = user
+    }
+    
+    func getUsers() {
+        transferManager.getUsers { [weak self] result in
+            switch result {
+            case .success(let users):
+                self?.users = users
+            case .failure(let error):
+                self?.transferResult.send(.failure(error))
+            }
+        }
     }
     
     func getTransactions(userId: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {

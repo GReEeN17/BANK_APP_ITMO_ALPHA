@@ -1,14 +1,16 @@
 import UIKit
+import Combine
 
 class RegistrationViewController: UIViewController {
-    private let viewModel: AuthViewModelProtocol
+    private let viewModel: RegistrationViewModelProtocol
+    private var cancellables = Set<AnyCancellable>()
 
     private let emailTextField = UITextField()
     private let usernameTextField = UITextField()
     private let passwordTextField = UITextField()
     private let registerButton = UIButton(type: .system)
 
-    init(viewModel: AuthViewModelProtocol) {
+    init(viewModel: RegistrationViewModelProtocol) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
@@ -21,6 +23,7 @@ class RegistrationViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
         setupUI()
+        bindViewModel()
     }
 
     private func setupUI() {
@@ -87,21 +90,33 @@ class RegistrationViewController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
     }
 
+    private func bindViewModel() {
+        viewModel.registrationResult
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                switch result {
+                case .success(let user):
+                    self?.navigationController?.popViewController(animated: true)
+                case .failure:
+                    break
+                }
+            }
+            .store(in: &cancellables)
+
+        viewModel.showError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] errorMessage in
+                self?.showError(message: errorMessage)
+            }
+            .store(in: &cancellables)
+    }
+
     @objc private func registerButtonTapped() {
         guard let email = emailTextField.text,
               let username = usernameTextField.text,
               let password = passwordTextField.text else { return }
 
-        viewModel.register(email: email, username: username, password: password) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let user):
-                    self?.navigationController?.popViewController(animated: true)
-                case .failure(let error):
-                    self?.showError(message: error.localizedDescription)
-                }
-            }
-        }
+        viewModel.register(email: email, username: username, password: password)
     }
 
     private func showError(message: String) {

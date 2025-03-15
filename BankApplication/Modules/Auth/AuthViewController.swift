@@ -1,4 +1,5 @@
 import UIKit
+import Combine
 
 class AuthViewController: UIViewController {
     private let viewModel: AuthViewModelProtocol
@@ -11,6 +12,7 @@ class AuthViewController: UIViewController {
 
     private let emailErrorLabel = UILabel()
     private let passwordErrorLabel = UILabel()
+    private var cancellables = Set<AnyCancellable>()
 
     init(viewModel: AuthViewModelProtocol) {
         self.viewModel = viewModel
@@ -26,6 +28,7 @@ class AuthViewController: UIViewController {
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
 
         setupUI()
+        bindViewModel()
         setupTextFields()
     }
 
@@ -40,6 +43,9 @@ class AuthViewController: UIViewController {
 
         configureErrorLabel(emailErrorLabel, text: "Invalid email")
         configureErrorLabel(passwordErrorLabel, text: "Password must be at least 6 characters")
+        
+        emailErrorLabel.isHidden = true
+        passwordErrorLabel.isHidden = true
 
         view.addSubview(usernameTextField)
         view.addSubview(passwordTextField)
@@ -84,6 +90,53 @@ class AuthViewController: UIViewController {
             logoutButton.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
+    
+    private func bindViewModel() {
+        viewModel.isLoginButtonEnabled
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isEnabled, on: loginButton)
+            .store(in: &cancellables)
+
+        viewModel.isRegisterButtonEnabled
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isEnabled, on: registerButton)
+            .store(in: &cancellables)
+
+        viewModel.emailError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                self?.emailErrorLabel.isHidden = error == nil
+                self?.emailErrorLabel.text = error
+            }
+            .store(in: &cancellables)
+
+        viewModel.passwordError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] error in
+                self?.passwordErrorLabel.isHidden = error == nil
+                self?.passwordErrorLabel.text = error
+            }
+            .store(in: &cancellables)
+
+        viewModel.loginResult
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                switch result {
+                case .success(let user):
+                    self?.navigateToBalanceScreen(user: user)
+                case .failure(_):
+                    break
+                }
+            }
+            .store(in: &cancellables)
+        
+        viewModel.showError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] errorMessage in
+                self?.showError(message: errorMessage)
+            }
+            .store(in: &cancellables)
+    }
 
     private func setupTextFields() {
         usernameTextField.addTarget(self, action: #selector(emailTextFieldDidChange), for: .editingChanged)
@@ -91,14 +144,14 @@ class AuthViewController: UIViewController {
     }
 
     @objc private func emailTextFieldDidChange() {
-        let isValid = viewModel.validateEmail(usernameTextField.text)
-        emailErrorLabel.isHidden = isValid
+        viewModel.updateEmail(usernameTextField.text)
+        emailErrorLabel.isHidden = viewModel.validateEmail(usernameTextField.text)
         updateButtonStates()
     }
 
     @objc private func passwordTextFieldDidChange() {
-        let isValid = viewModel.validatePassword(passwordTextField.text)
-        passwordErrorLabel.isHidden = isValid
+        viewModel.updatePassword(passwordTextField.text)
+        passwordErrorLabel.isHidden = viewModel.validatePassword(passwordTextField.text)
         updateButtonStates()
     }
 
@@ -154,15 +207,15 @@ class AuthViewController: UIViewController {
                 switch result {
                 case .success(let user):
                     self?.navigateToBalanceScreen(user: user)
-                case .failure(let error):
-                    self?.showError(message: error.localizedDescription)
+                case .failure(_):
+                    break
                 }
             }
         }
     }
 
     @objc private func registerButtonTapped() {
-        let registrationViewModel = AuthViewModel(authService: AuthManager())
+        let registrationViewModel = RegistrationViewModel(authService: AuthManager())
         let registrationVC = RegistrationViewController(viewModel: registrationViewModel)
         navigationController?.pushViewController(registrationVC, animated: true)
     }
@@ -173,8 +226,8 @@ class AuthViewController: UIViewController {
                 switch result {
                 case .success:
                     self?.navigateToAuthScreen()
-                case .failure(let error):
-                    self?.showError(message: error.localizedDescription)
+                case .failure(_):
+                    break
                 }
             }
         }
