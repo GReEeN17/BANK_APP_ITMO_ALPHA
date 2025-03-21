@@ -235,7 +235,8 @@ class AuthViewController: UIViewController {
 
     private func navigateToBalanceScreen(user: User) {
         let balanceManager = BalanceManager(users: [user])
-        let balanceViewModel = BalanceViewModel(balanceManager: balanceManager)
+        let currencyManager = CurrencyManager()
+        let balanceViewModel = BalanceViewModel(balanceManager: balanceManager, currencyManager: currencyManager)
         let balanceVC = BalanceViewController(viewModel: balanceViewModel, user: user)
         navigationController?.pushViewController(balanceVC, animated: true)
     }
