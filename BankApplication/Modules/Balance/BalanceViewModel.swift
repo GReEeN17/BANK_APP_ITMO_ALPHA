@@ -1,8 +1,16 @@
-class BalanceViewModel: BalanceViewModelProtocol{
-    private let balanceManager: BalanceManagerProtocol
+import Foundation
 
-    init(balanceManager: BalanceManagerProtocol) {
+class BalanceViewModel: BalanceViewModelProtocol {
+    private let balanceManager: BalanceManagerProtocol
+    private let currencyManager: CurrencyManagerProtocol
+    
+    init(balanceManager: BalanceManagerProtocol, currencyManager: CurrencyManagerProtocol) {
         self.balanceManager = balanceManager
+        self.currencyManager = currencyManager
+    }
+    
+    func fetchCurrencies(page: Int, completion: @escaping (Result<[Currency], Error>) -> Void) {
+        currencyManager.fetchCurrencies(page: page, completion: completion)
     }
     
     func getTransactions(userId: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {
