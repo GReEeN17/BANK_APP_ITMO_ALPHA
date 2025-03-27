@@ -8,4 +8,6 @@ protocol BalanceViewModelProtocol {
     func withdraw(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void)
 
     func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void)
+    
+    func fetchCurrencies(page: Int, completion: @escaping (Result<[Currency], Error>) -> Void)
 }
