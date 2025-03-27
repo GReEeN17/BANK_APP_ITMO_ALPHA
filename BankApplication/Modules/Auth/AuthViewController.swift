@@ -9,13 +9,15 @@ class AuthViewController: UIViewController {
     private let loginButton = UIButton(type: .system)
     private let registerButton = UIButton(type: .system)
     private let logoutButton = UIButton(type: .system)
+    private let router: RouterProtocol?
 
     private let emailErrorLabel = UILabel()
     private let passwordErrorLabel = UILabel()
     private var cancellables = Set<AnyCancellable>()
 
-    init(viewModel: AuthViewModelProtocol) {
+    init(viewModel: AuthViewModelProtocol, router: RouterProtocol) {
         self.viewModel = viewModel
+        self.router = router
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -215,9 +217,7 @@ class AuthViewController: UIViewController {
     }
 
     @objc private func registerButtonTapped() {
-        let registrationViewModel = RegistrationViewModel(authService: AuthManager())
-        let registrationVC = RegistrationViewController(viewModel: registrationViewModel)
-        navigationController?.pushViewController(registrationVC, animated: true)
+        router?.showRegistrationScreen()
     }
 
     @objc private func logoutButtonTapped() {
@@ -234,17 +234,11 @@ class AuthViewController: UIViewController {
     }
 
     private func navigateToBalanceScreen(user: User) {
-        let balanceManager = BalanceManager(users: [user])
-        let currencyManager = CurrencyManager()
-        let balanceViewModel = BalanceViewModel(balanceManager: balanceManager, currencyManager: currencyManager)
-        let balanceVC = BalanceViewController(viewModel: balanceViewModel, user: user)
-        navigationController?.pushViewController(balanceVC, animated: true)
+        router?.showBalanceScreen(user: user)
     }
 
     private func navigateToAuthScreen() {
-        let authViewModel = AuthViewModel(authService: AuthManager())
-        let authVC = AuthViewController(viewModel: authViewModel)
-        navigationController?.setViewControllers([authVC], animated: true)
+        router?.showAuthScreen()
     }
 
     private func showError(message: String) {

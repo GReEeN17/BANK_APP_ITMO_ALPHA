@@ -3,15 +3,19 @@ import Combine
 
 class TransferViewController: UIViewController {
     private let viewModel: TransferViewModelProtocol
+    private let router: RouterProtocol
     private var cancellables = Set<AnyCancellable>()
-
+    
     private let tableView = UITableView()
     private let amountTextField = UITextField()
     private let transferButton = UIButton(type: .system)
-    private var tableManager: TableManager!
+    private var tableManager: TableManagerProtocol!
+    private let refreshControl = UIRefreshControl()
 
-    init(viewModel: TransferViewModelProtocol) {
+    init(viewModel: TransferViewModelProtocol, router: RouterProtocol, tableManager: TableManagerProtocol) {
         self.viewModel = viewModel
+        self.router = router
+        self.tableManager = tableManager
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -21,8 +25,15 @@ class TransferViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupUI()
+        setupRefreshControl()
+        bindViewModel()
+        loadUsers()
+    }
+    
+    private func setupUI() {
         view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
-
+        
         configureTextField(amountTextField, placeholder: "Enter amount")
         configureButton(transferButton, title: "Transfer", action: #selector(transferButtonTapped))
 
@@ -50,33 +61,18 @@ class TransferViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
         ])
-
-        bindViewModel()
+    }
+    
+    private func setupRefreshControl() {
+        refreshControl.addTarget(self, action: #selector(refreshUsers), for: .valueChanged)
+        refreshControl.tintColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
+        tableView.refreshControl = refreshControl
+    }
+    
+    @objc private func refreshUsers() {
         loadUsers()
     }
-
-    private func bindViewModel() {
-        viewModel.usersPublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] users in
-                let cellModels = users.map { TableCellModel(title: $0.username, isSelected: false) }
-                self?.tableManager.update(with: cellModels)
-            }
-            .store(in: &cancellables)
-
-        viewModel.transferResult
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] result in
-                switch result {
-                case .success:
-                    self?.showAlert(message: "Transfer successful!")
-                case .failure(let error):
-                    self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
-                }
-            }
-            .store(in: &cancellables)
-    }
-
+    
     private func configureTextField(_ textField: UITextField, placeholder: String) {
         textField.placeholder = placeholder
         textField.borderStyle = .roundedRect
@@ -104,7 +100,40 @@ class TransferViewController: UIViewController {
         button.layer.shadowRadius = 4.0
         button.translatesAutoresizingMaskIntoConstraints = false
     }
+    
+    private func bindViewModel() {
+        viewModel.usersPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] users in
+                let cellModels = users.map {
+                    TableCellModel(
+                        id: $0.id,
+                        title: $0.username,
+                        subtitle: "Account: \($0.id.prefix(8))",
+                        imageUrl: nil,
+                        isSelected: false
+                    )
+                }
+                self?.tableManager.update(with: cellModels)
+                self?.refreshControl.endRefreshing()
+            }
+            .store(in: &cancellables)
 
+        viewModel.transferResult
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] result in
+                switch result {
+                case .success:
+                    self?.showAlert(message: "Transfer successful!")
+                    self?.router.popViewController(animated: true)
+                case .failure(let error):
+                    self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
+                    self?.refreshControl.endRefreshing()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
     private func loadUsers() {
         viewModel.getUsers()
     }
@@ -125,6 +154,7 @@ class TransferViewController: UIViewController {
                     case .failure(let error):
                         self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
                     }
+                    self?.refreshControl.endRefreshing()
                 }
             }
         } else {

@@ -4,14 +4,16 @@ import Combine
 class RegistrationViewController: UIViewController {
     private let viewModel: RegistrationViewModelProtocol
     private var cancellables = Set<AnyCancellable>()
+    private let router: RouterProtocol?
 
     private let emailTextField = UITextField()
     private let usernameTextField = UITextField()
     private let passwordTextField = UITextField()
     private let registerButton = UIButton(type: .system)
 
-    init(viewModel: RegistrationViewModelProtocol) {
+    init(viewModel: RegistrationViewModelProtocol, router: RouterProtocol) {
         self.viewModel = viewModel
+        self.router = router
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -96,7 +98,7 @@ class RegistrationViewController: UIViewController {
             .sink { [weak self] result in
                 switch result {
                 case .success(let user):
-                    self?.navigationController?.popViewController(animated: true)
+                    self?.router?.popViewController(animated: true)
                 case .failure:
                     break
                 }
