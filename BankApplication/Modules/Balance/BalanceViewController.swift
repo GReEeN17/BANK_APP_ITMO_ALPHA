@@ -3,6 +3,7 @@ import UIKit
 class BalanceViewController: UIViewController {
     private let viewModel: BalanceViewModelProtocol
     private let user: User
+    private let router: RouterProtocol?
 
     private let balanceLabel = UILabel()
     private let transactionsLabel = UILabel()
@@ -12,9 +13,10 @@ class BalanceViewController: UIViewController {
     
     private var currentPage = 0
 
-    init(viewModel: BalanceViewModelProtocol, user: User) {
+    init(viewModel: BalanceViewModelProtocol, user: User, router: RouterProtocol) {
         self.viewModel = viewModel
         self.user = user
+        self.router = router
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -151,19 +153,10 @@ class BalanceViewController: UIViewController {
     }
 
     @objc private func transferButtonTapped() {
-        let users = UserManager.shared.getAllUsers()
-        
-        let balanceManager = BalanceManager(users: users)
-        let transferManager = TransferManager(users: users)
-        
-        let transferViewModel = TransferViewModel(balanceManager: balanceManager, transferManager: transferManager, user: user)
-        let transferVC = TransferViewController(viewModel: transferViewModel)
-        
-        self.navigationController?.pushViewController(transferVC, animated: true)
+        router?.showTransferScreen(user: user)
     }
     
     @objc private func profileButtonTapped() {
-        let profileVC = ProfileViewController(user: user)
-        self.navigationController?.pushViewController(profileVC, animated: true)
+        router?.showProfileScreen(user: user)
     }
 }

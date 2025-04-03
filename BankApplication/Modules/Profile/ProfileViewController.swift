@@ -2,12 +2,14 @@ import UIKit
 
 class ProfileViewController: UIViewController {
     private let user: User
+    private let router: RouterProtocol?
 
     private let usernameLabel = UILabel()
     private let logoutButton = UIButton(type: .system)
 
-    init(user: User) {
+    init(user: User, router: RouterProtocol) {
         self.user = user
+        self.router = router
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -59,12 +61,6 @@ class ProfileViewController: UIViewController {
     }
 
     @objc private func logoutButtonTapped() {
-        if let authVC = navigationController?.viewControllers.first(where: { $0 is AuthViewController }) {
-            navigationController?.popToViewController(authVC, animated: true)
-        } else {
-            let authViewModel = AuthViewModel(authService: AuthManager())
-            let authVC = AuthViewController(viewModel: authViewModel)
-            navigationController?.setViewControllers([authVC], animated: true)
-        }
+        router?.popToRootViewController(animated: true)
     }
 }
