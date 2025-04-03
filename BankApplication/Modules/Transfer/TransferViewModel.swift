@@ -1,4 +1,5 @@
 import Combine
+import Foundation
 
 class TransferViewModel: TransferViewModelProtocol {
     private let balanceManager: BalanceManagerProtocol
@@ -45,8 +46,12 @@ class TransferViewModel: TransferViewModelProtocol {
         balanceManager.withdraw(userId: userId, amount: amount, completion: completion)
     }
 
-    func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void) {
-        balanceManager.transferMoney(from: senderId, to: recipientId, amount: amount, completion: completion)
+    func transferMoney(from senderId: String, to recipientId: String, amount: Double) {
+        balanceManager.transferMoney(from: senderId, to: recipientId, amount: amount) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.transferResult.send(result)
+            }
+        }
     }
     
     func validateAmount(_ amountText: String?) -> Double? {

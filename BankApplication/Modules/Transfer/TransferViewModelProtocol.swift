@@ -6,7 +6,7 @@ protocol TransferViewModelProtocol {
     func getBalance(userId: String, completion: @escaping (Result<Balance, Error>) -> Void)
     func deposit(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void)
     func withdraw(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void)
-    func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void)
+    func transferMoney(from senderId: String, to recipientId: String, amount: Double)
 
     func validateAmount(_ amountText: String?) -> Double?
 

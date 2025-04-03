@@ -55,13 +55,14 @@ class AuthViewModel: AuthViewModelProtocol {
     var loginResult = PassthroughSubject<Result<User, Error>, Never>()
     var showError = PassthroughSubject<String, Never>()
     
-    func login(email: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
+    func login(email: String, password: String) {
         authManager.login(email: email, password: password) { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let user):
                     self?.loginResult.send(.success(user))
                 case .failure(let error):
+                    self?.loginResult.send(.failure(error))
                     self?.showError.send(error.localizedDescription)
                 }
             }
