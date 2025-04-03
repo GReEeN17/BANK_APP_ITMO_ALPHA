@@ -1,35 +1,69 @@
 import Foundation
+import Combine
 
-class BalanceViewModel: BalanceViewModelProtocol {
+final class BalanceViewModel: BalanceViewModelProtocol {
     private let balanceManager: BalanceManagerProtocol
     private let currencyManager: CurrencyManagerProtocol
+    
+    private let balanceSubject = PassthroughSubject<Result<Balance, Error>, Never>()
+    private let transactionsSubject = PassthroughSubject<Result<[Transaction], Error>, Never>()
+    private let currenciesSubject = PassthroughSubject<Result<[Currency], Error>, Never>()
+    private let errorSubject = PassthroughSubject<String, Never>()
+    
+    var balanceResult: AnyPublisher<Result<Balance, Error>, Never> {
+        balanceSubject.eraseToAnyPublisher()
+    }
+    
+    var transactionsResult: AnyPublisher<Result<[Transaction], Error>, Never> {
+        transactionsSubject.eraseToAnyPublisher()
+    }
+    
+    var currenciesResult: AnyPublisher<Result<[Currency], Error>, Never> {
+        currenciesSubject.eraseToAnyPublisher()
+    }
+    
+    var showError: AnyPublisher<String, Never> {
+        errorSubject.eraseToAnyPublisher()
+    }
     
     init(balanceManager: BalanceManagerProtocol, currencyManager: CurrencyManagerProtocol) {
         self.balanceManager = balanceManager
         self.currencyManager = currencyManager
     }
     
-    func fetchCurrencies(page: Int, completion: @escaping (Result<[Currency], Error>) -> Void) {
-        currencyManager.fetchCurrencies(page: page, completion: completion)
+    func loadBalance(userId: String) {
+        balanceManager.getBalance(userId: userId) { [weak self] result in
+            switch result {
+            case .success(let balance):
+                self?.balanceSubject.send(.success(balance))
+            case .failure(let error):
+                self?.balanceSubject.send(.failure(error))
+                self?.errorSubject.send("Failed to load balance: \(error.localizedDescription)")
+            }
+        }
     }
     
-    func getTransactions(userId: String, completion: @escaping (Result<[Transaction], Error>) -> Void) {
-        balanceManager.getTransactions(userId: userId, completion: completion)
+    func loadTransactions(userId: String) {
+        balanceManager.getTransactions(userId: userId) { [weak self] result in
+            switch result {
+            case .success(let transactions):
+                self?.transactionsSubject.send(.success(transactions))
+            case .failure(let error):
+                self?.transactionsSubject.send(.failure(error))
+                self?.errorSubject.send("Failed to load transactions: \(error.localizedDescription)")
+            }
+        }
     }
-
-    func getBalance(userId: String, completion: @escaping (Result<Balance, Error>) -> Void) {
-        balanceManager.getBalance(userId: userId, comletion: completion)
-    }
-
-    func deposit(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void) {
-        balanceManager.deposit(userId: userId, amount: amount, completion: completion)
-    }
-
-    func withdraw(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void) {
-        balanceManager.withdraw(userId: userId, amount: amount, completion: completion)
-    }
-
-    func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void) {
-        balanceManager.transferMoney(from: senderId, to: recipientId, amount: amount, completion: completion)
+    
+    func loadCurrencies(page: Int) {
+        currencyManager.fetchCurrencies(page: page) { [weak self] result in
+            switch result {
+            case .success(let currencies):
+                self?.currenciesSubject.send(.success(currencies))
+            case .failure(let error):
+                self?.currenciesSubject.send(.failure(error))
+                self?.errorSubject.send("Failed to load currencies: \(error.localizedDescription)")
+            }
+        }
     }
 }

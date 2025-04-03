@@ -5,6 +5,10 @@ class RegistrationViewModel: RegistrationViewModelProtocol {
     private let authManager: AuthManagerProtocol
     var registrationResult = PassthroughSubject<Result<User, Error>, Never>()
     var showError = PassthroughSubject<String, Never>()
+    private let isLoadingSubject = CurrentValueSubject<Bool, Never>(false)
+    var isLoading: AnyPublisher<Bool, Never> {
+        return isLoadingSubject.eraseToAnyPublisher()
+    }
 
     init(authService: AuthManagerProtocol) {
         self.authManager = authService
