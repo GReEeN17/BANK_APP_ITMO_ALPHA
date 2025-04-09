@@ -9,7 +9,6 @@ class ProfileViewController: UIViewController {
     private let emailLabel = DSLabel()
     private let logoutButton = DSButton()
     private let avatarImageView = UIImageView()
-
     init(user: User, router: RouterProtocol) {
         self.user = user
         self.router = router

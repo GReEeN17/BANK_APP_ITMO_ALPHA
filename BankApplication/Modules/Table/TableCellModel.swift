@@ -6,7 +6,7 @@ struct TableCellModel: TableCellModelProtocol {
     let subtitle: String?
     let imageUrl: String?
     var isSelected: Bool
-    
+   
     var cellIdentifier: String {
         return String(describing: UserCell.self)
     }

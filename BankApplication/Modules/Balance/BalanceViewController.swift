@@ -61,7 +61,6 @@ final class BalanceViewController: UIViewController {
         button.addTarget(self, action: #selector(loadMoreButtonTapped), for: .touchUpInside)
         return button
     }()
-    
     init(viewModel: BalanceViewModelProtocol, user: User, router: RouterProtocol) {
         self.viewModel = viewModel
         self.user = user

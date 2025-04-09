@@ -42,7 +42,7 @@ final class ListViewModel: ListViewModelProtocol {
         selectedIndices.remove(index)
         updateModelsSelection()
     }
-    
+   
     func didTapAdd() {
         // Что-то
     }

@@ -77,7 +77,6 @@ class AuthViewController: UIViewController {
         button.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
         return button
     }()
-    
     init(viewModel: AuthViewModelProtocol, router: RouterProtocol) {
         self.viewModel = viewModel
         self.router = router
