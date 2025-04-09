@@ -2,11 +2,13 @@ import UIKit
 
 class ProfileViewController: UIViewController {
     private let user: User
-    private let router: RouterProtocol?
-
-    private let usernameLabel = UILabel()
-    private let logoutButton = UIButton(type: .system)
-
+    private let router: RouterProtocol
+    
+    private let stackView = DSStackView(spacing: DSSpacing.xLarge)
+    private let usernameLabel = DSLabel()
+    private let emailLabel = DSLabel()
+    private let logoutButton = DSButton()
+    private let avatarImageView = UIImageView()
     init(user: User, router: RouterProtocol) {
         self.user = user
         self.router = router
@@ -19,48 +21,76 @@ class ProfileViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
-
-        configureLabel(usernameLabel, text: user.username, fontSize: 24)
-
-        configureButton(logoutButton, title: "Logout", action: #selector(logoutButtonTapped))
-
-        view.addSubview(usernameLabel)
-        view.addSubview(logoutButton)
-
+        setupUI()
+    }
+    
+    private func setupUI() {
+        view.backgroundColor = DSColors.background
+        title = "Profile"
+        
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        view.addSubview(stackView)
+        
+        avatarImageView.image = UIImage(systemName: "person.circle.fill")
+        avatarImageView.tintColor = DSColors.primary
+        avatarImageView.contentMode = .scaleAspectFit
+        avatarImageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        usernameLabel.configure(with: DSLabelViewModel(
+            text: user.username,
+            type: .title,
+        ))
+        
+        emailLabel.configure(with: DSLabelViewModel(
+            text: user.email,
+            type: .body,
+        ))
+        
+        logoutButton.configure(with: DSButtonViewModel(
+            title: "Logout",
+            type: .error
+        ))
+        logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
+        
+        stackView.addArrangedSubview(avatarImageView)
+        stackView.addArrangedSubview(usernameLabel)
+        stackView.addArrangedSubview(emailLabel)
+        stackView.addArrangedSubview(logoutButton)
+        
         NSLayoutConstraint.activate([
-            usernameLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            usernameLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 50),
-
-            logoutButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            logoutButton.topAnchor.constraint(equalTo: usernameLabel.bottomAnchor, constant: 30),
-            logoutButton.widthAnchor.constraint(equalToConstant: 200),
-            logoutButton.heightAnchor.constraint(equalToConstant: 40),
+            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: DSSpacing.large),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -DSSpacing.large),
+            
+            avatarImageView.widthAnchor.constraint(equalToConstant: 100),
+            avatarImageView.heightAnchor.constraint(equalToConstant: 100),
+            
+            logoutButton.widthAnchor.constraint(equalTo: stackView.widthAnchor),
+            logoutButton.heightAnchor.constraint(equalToConstant: DSSpacing.xLarge)
         ])
     }
 
-    private func configureLabel(_ label: UILabel, text: String, fontSize: CGFloat) {
-        label.text = text
-        label.textAlignment = .center
-        label.textColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        label.font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
-        label.translatesAutoresizingMaskIntoConstraints = false
-    }
-
-    private func configureButton(_ button: UIButton, title: String, action: Selector) {
-        button.setTitle(title, for: .normal)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        button.backgroundColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 8.0
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.layer.shadowOpacity = 0.1
-        button.layer.shadowRadius = 4.0
-        button.translatesAutoresizingMaskIntoConstraints = false
-    }
-
     @objc private func logoutButtonTapped() {
-        router?.popToRootViewController(animated: true)
+        let alert = UIAlertController(
+            title: "Logout",
+            message: "Are you sure you want to logout?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(
+            title: "Cancel",
+            style: .cancel
+        ))
+        
+        alert.addAction(UIAlertAction(
+            title: "Logout",
+            style: .destructive,
+            handler: { [weak self] _ in
+                self?.router.popToRootViewController(animated: true)
+            }
+        ))
+        
+        present(alert, animated: true)
     }
 }

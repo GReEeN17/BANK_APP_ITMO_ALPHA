@@ -6,9 +6,11 @@ class TransferViewController: UIViewController {
     private let router: RouterProtocol
     private var cancellables = Set<AnyCancellable>()
     
+    private let stackView = DSStackView(spacing: DSSpacing.large)
+    private let amountTextField = DSTextField()
+    private let transferButton = DSButton()
     private let tableView = UITableView()
-    private let amountTextField = UITextField()
-    private let transferButton = UIButton(type: .system)
+    private let emptyStateView = DSEmptyStateView()
     private var tableManager: TableManagerProtocol!
     private let refreshControl = UIRefreshControl()
 
@@ -27,95 +29,118 @@ class TransferViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupRefreshControl()
+        setupTableManager()
         bindViewModel()
         loadUsers()
     }
     
     private func setupUI() {
-        view.backgroundColor = UIColor(red: 0.85, green: 1.0, blue: 0.85, alpha: 1.0)
+        view.backgroundColor = DSColors.background
         
-        configureTextField(amountTextField, placeholder: "Enter amount")
-        configureButton(transferButton, title: "Transfer", action: #selector(transferButtonTapped))
-
-        tableManager = TableManager(tableView: tableView)
+        stackView.axis = .vertical
+        stackView.alignment = .fill
+        view.addSubview(stackView)
+        
+        amountTextField.configure(with: DSTextFieldViewModel(
+            placeholder: "Enter amount",
+            type: .decimalPad
+        ))
+        
+        transferButton.configure(with: DSButtonViewModel(
+            title: "Transfer",
+            type: .primary
+        ))
+        transferButton.addTarget(self, action: #selector(transferButtonTapped), for: .touchUpInside)
+        
         tableView.backgroundColor = .clear
+        tableView.separatorStyle = .none
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 60
         tableView.translatesAutoresizingMaskIntoConstraints = false
-
-        view.addSubview(amountTextField)
-        view.addSubview(transferButton)
-        view.addSubview(tableView)
-
+        tableView.allowsSelection = true
+        tableView.refreshControl = refreshControl
+        
+        emptyStateView.configure(with: DSEmptyStateViewModel(
+            title: "No Recipients",
+            message: "There are no recipients available",
+            image: UIImage(systemName: "person.2.slash")
+        ))
+        emptyStateView.isHidden = true
+        
+        stackView.addArrangedSubview(amountTextField)
+        stackView.addArrangedSubview(transferButton)
+        stackView.addArrangedSubview(tableView)
+        view.addSubview(emptyStateView)
+        
         NSLayoutConstraint.activate([
-            amountTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            amountTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            amountTextField.widthAnchor.constraint(equalToConstant: 200),
-            amountTextField.heightAnchor.constraint(equalToConstant: 40),
-
-            transferButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            transferButton.topAnchor.constraint(equalTo: amountTextField.bottomAnchor, constant: 20),
-            transferButton.widthAnchor.constraint(equalToConstant: 200),
-            transferButton.heightAnchor.constraint(equalToConstant: 40),
-
-            tableView.topAnchor.constraint(equalTo: transferButton.bottomAnchor, constant: 20),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: DSSpacing.xLarge),
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: DSSpacing.large),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -DSSpacing.large),
+            stackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
+            amountTextField.heightAnchor.constraint(equalToConstant: 44),
+            transferButton.heightAnchor.constraint(equalToConstant: 44),
+            
+            emptyStateView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: DSSpacing.large),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -DSSpacing.large)
         ])
     }
     
     private func setupRefreshControl() {
+        refreshControl.tintColor = DSColors.primary
         refreshControl.addTarget(self, action: #selector(refreshUsers), for: .valueChanged)
-        refreshControl.tintColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        tableView.refreshControl = refreshControl
+    }
+    
+    private func setupTableManager() {
+        tableManager = TableManager(tableView: tableView)
+        tableManager.registerCell(DSListCell.self, for: DSListCellModel.self)
+        tableManager.setDelegate(self)
     }
     
     @objc private func refreshUsers() {
         loadUsers()
     }
     
-    private func configureTextField(_ textField: UITextField, placeholder: String) {
-        textField.placeholder = placeholder
-        textField.borderStyle = .roundedRect
-        textField.backgroundColor = .white
-        textField.textColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        textField.layer.borderColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0).cgColor
-        textField.layer.borderWidth = 1.0
-        textField.layer.cornerRadius = 8.0
-        textField.layer.shadowColor = UIColor.black.cgColor
-        textField.layer.shadowOffset = CGSize(width: 0, height: 2)
-        textField.layer.shadowOpacity = 0.1
-        textField.layer.shadowRadius = 4.0
-        textField.translatesAutoresizingMaskIntoConstraints = false
-    }
+    @objc private func transferButtonTapped() {
+        guard let amount = viewModel.validateAmount(amountTextField.text) else {
+            showAlert(message: "Please enter a valid amount.")
+            return
+        }
 
-    private func configureButton(_ button: UIButton, title: String, action: Selector) {
-        button.setTitle(title, for: .normal)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        button.backgroundColor = UIColor(red: 0.2, green: 0.6, blue: 0.2, alpha: 1.0)
-        button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 8.0
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOffset = CGSize(width: 0, height: 2)
-        button.layer.shadowOpacity = 0.1
-        button.layer.shadowRadius = 4.0
-        button.translatesAutoresizingMaskIntoConstraints = false
+        if let selectedIndexPath = tableView.indexPathForSelectedRow {
+            let recipient = viewModel.users[selectedIndexPath.row]
+            viewModel.transferMoney(from: viewModel.user.id, to: recipient.id, amount: amount)
+        } else {
+            showAlert(message: "Please select a recipient.")
+        }
+    }
+    
+    private func loadUsers() {
+        viewModel.getUsers()
     }
     
     private func bindViewModel() {
         viewModel.usersPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] users in
-                let cellModels = users.map {
-                    TableCellModel(
-                        id: $0.id,
-                        title: $0.username,
-                        subtitle: "Account: \($0.id.prefix(8))",
-                        imageUrl: nil,
-                        isSelected: false
+                guard let self = self else { return }
+                
+                let cellModels = users.map { user in
+                    DSListCellModel(
+                        id: user.id,
+                        title: user.username,
+                        subtitle: "Account: \(user.id.prefix(8))",
+                        icon: UIImage(systemName: "person.circle"),
+                        isSelected: false,
                     )
                 }
-                self?.tableManager.update(with: cellModels)
-                self?.refreshControl.endRefreshing()
+                
+                self.tableManager.update(with: cellModels)
+                self.refreshControl.endRefreshing()
+                self.emptyStateView.isHidden = !users.isEmpty
+                self.tableView.reloadData()
             }
             .store(in: &cancellables)
 
@@ -134,37 +159,40 @@ class TransferViewController: UIViewController {
             .store(in: &cancellables)
     }
     
-    private func loadUsers() {
-        viewModel.getUsers()
-    }
-
-    @objc private func transferButtonTapped() {
-        guard let amount = viewModel.validateAmount(amountTextField.text) else {
-            showAlert(message: "Please enter a valid amount.")
-            return
-        }
-
-        if let selectedIndexPath = tableView.indexPathForSelectedRow {
-            let recipient = viewModel.users[selectedIndexPath.row]
-            viewModel.transferMoney(from: viewModel.user.id, to: recipient.id, amount: amount) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success:
-                        self?.showAlert(message: "Transfer successful!")
-                    case .failure(let error):
-                        self?.showAlert(message: "Transfer failed: \(error.localizedDescription)")
-                    }
-                    self?.refreshControl.endRefreshing()
-                }
-            }
-        } else {
-            showAlert(message: "Please select a recipient.")
-        }
-    }
-
     private func showAlert(message: String) {
-        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        present(alert, animated: true, completion: nil)
+        let alert = UIAlertController(
+            title: nil,
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: "OK",
+            style: .default
+        ))
+        present(alert, animated: true)
+    }
+}
+
+extension TransferViewController: TableManagerDelegate {
+    func didSelectItem(at index: Int) {
+        if let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? DSListCell {
+            cell.setSelected(true, animated: true)
+        }
+    }
+    
+    func didDeselectItem(at index: Int) {
+        if let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as? DSListCell {
+            cell.setSelected(false, animated: true)
+        }
+    }
+    
+    func willDisplayItem(at index: Int) {
+        if index == viewModel.users.count - 2 {
+            loadUsers()
+        }
+    }
+    
+    func refreshData() {
+        refreshUsers()
     }
 }

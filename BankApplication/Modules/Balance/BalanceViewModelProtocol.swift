@@ -1,13 +1,13 @@
+import Foundation
+import Combine
+
 protocol BalanceViewModelProtocol {
-    func getTransactions(userId: String, completion: @escaping (Result<[Transaction], Error>) -> Void)
-
-    func getBalance(userId: String, completion: @escaping (Result<Balance, Error>) -> Void)
-
-    func deposit(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void)
-
-    func withdraw(userId: String, amount: Double, completion: @escaping (Result<Balance, Error>) -> Void)
-
-    func transferMoney(from senderId: String, to recipientId: String, amount: Double, completion: @escaping (Result<Void, Error>) -> Void)
+    var balanceResult: AnyPublisher<Result<Balance, Error>, Never> { get }
+    var transactionsResult: AnyPublisher<Result<[Transaction], Error>, Never> { get }
+    var currenciesResult: AnyPublisher<Result<[Currency], Error>, Never> { get }
+    var showError: AnyPublisher<String, Never> { get }
     
-    func fetchCurrencies(page: Int, completion: @escaping (Result<[Currency], Error>) -> Void)
+    func loadBalance(userId: String)
+    func loadTransactions(userId: String)
+    func loadCurrencies(page: Int)
 }

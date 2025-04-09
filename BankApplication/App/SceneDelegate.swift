@@ -7,11 +7,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
         
-        let authService = AuthManager()
-        let authViewModel = AuthViewModel(authService: authService)
-        let authVC = AuthViewController(viewModel: authViewModel)
-        
-        let navigationController = UINavigationController(rootViewController: authVC)
+        let navigationController = UINavigationController()
+        let router = Router(navigationController: navigationController)
+        router.showAuthScreen()
+
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
     }
