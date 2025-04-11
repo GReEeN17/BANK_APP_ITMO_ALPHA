@@ -1,0 +1,81 @@
+{
+  "type": "contentView",
+  "content": {
+    "backgroundColor": "background"
+  },
+  "actions": {
+    "Обновить": {
+      "type": "reload"
+    },
+    "Мой профиль": {
+      "type": "navigate",
+      "payload": {
+        "screen": "profile"
+      }
+    },
+    "Баланс": {
+      "type": "navigate",
+      "payload": {
+        "screen": "balance"
+      }
+    }
+  },
+  "subviews": [
+    {
+      "type": "stackView",
+      "content": {
+        "axis": "vertical",
+        "spacing": "large",
+        "padding": "medium"
+      },
+      "subviews": [
+        {
+          "type": "label",
+          "content": {
+            "text": "Банковские сервисы",
+            "type": "title",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "button",
+          "content": {
+            "text": "Обновить",
+            "type": "primary"
+          }
+        },
+        {
+          "type": "button",
+          "content": {
+            "text": "Мой профиль",
+            "type": "secondary"
+          }
+        },
+        {
+          "type": "button",
+          "content": {
+            "text": "Баланс",
+            "type": "primary"
+          }
+        },
+        {
+          "type": "serviceCard",
+          "content": {
+            "title": "Кешбек",
+            "subtitle": "До 10% возврата",
+            "iconName": "percent"
+          },
+          "actions": {
+            "tap": {
+              "type": "showAlert",
+              "payload": {
+                "title": "Кешбек",
+                "message": "Вам доступно 5% кешбека"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
