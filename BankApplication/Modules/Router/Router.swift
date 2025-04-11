@@ -59,6 +59,11 @@ final class Router: RouterProtocol {
         )
         navigationController?.pushViewController(transferVC, animated: true)
     }
+    
+    func showBankingServicesScreen(user: User) {
+        let viewController = BankingServicesViewController(router: self, user: user)
+        navigationController?.pushViewController(viewController, animated: true)
+    }
    
     func popViewController(animated: Bool) {
         navigationController?.popViewController(animated: animated)

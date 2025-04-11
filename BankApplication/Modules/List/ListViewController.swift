@@ -140,6 +140,7 @@ extension ListViewController: TableManagerDelegate {
     func willDisplayItem(at index: Int) {
         viewModel.willDisplayItem(at: index)
     }
+    
     func didSelectItem(at index: Int) {
         viewModel.didSelectItem(at: index)
     }

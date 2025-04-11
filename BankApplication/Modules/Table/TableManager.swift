@@ -42,6 +42,7 @@ extension TableManager: TableManagerProtocol {
     func setDelegate(_ delegate: TableManagerDelegate) {
         self.delegate = delegate
     }
+    
     func registerCell<Cell: UITableViewCell, Model: TableCellModelProtocol>(
         _ cellType: Cell.Type,
         for modelType: Model.Type

@@ -42,7 +42,7 @@ final class ListViewModel: ListViewModelProtocol {
         selectedIndices.remove(index)
         updateModelsSelection()
     }
-   
+    
     func didTapAdd() {
         // Что-то
     }
@@ -65,6 +65,7 @@ final class ListViewModel: ListViewModelProtocol {
         
         isLoadingSubject.send(true)
         
+        // TODO: refactor this code, skelet
         DispatchQueue.global().asyncAfter(deadline: .now() + 1) { [weak self] in
             guard let self = self else { return }
             

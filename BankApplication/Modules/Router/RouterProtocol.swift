@@ -6,6 +6,7 @@ protocol RouterProtocol {
     func showListScreen()
     func showProfileScreen(user: User)
     func showTransferScreen(user: User)
+    func showBankingServicesScreen(user: User)
     
     func popViewController(animated: Bool)
     func popToRootViewController(animated: Bool)
