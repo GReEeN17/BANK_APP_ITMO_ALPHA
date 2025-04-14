@@ -38,47 +38,87 @@ class BankingServicesViewController: UIViewController {
     private func loadUI() {
         view.subviews.forEach { $0.removeFromSuperview() }
         
-        if let jsonData = loadJSONFromFile(named: "bankingServices") {
-            do {
-                let decoder = JSONDecoder()
-                let viewModel = try decoder.decode(BDUIView.self, from: jsonData)
-                
-                print("Top-level actions: \(viewModel.actions?.keys)")
-                
-                let view = mapper.map(viewModel: viewModel)
-                view.translatesAutoresizingMaskIntoConstraints = false
-                self.view.addSubview(view)
-                
-                NSLayoutConstraint.activate([
-                    view.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
-                    view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-                    view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-                    view.bottomAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.bottomAnchor)
-                ])
-                
-            } catch {
-                print("Decoding error: \(error)")
-                showErrorView()
+        loadJSONFromServer { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let jsonData):
+                    do {
+                        let decoder = JSONDecoder()
+                        let viewModel = try decoder.decode(BDUIView.self, from: jsonData)
+                        
+                        print("Top-level actions: \(viewModel.actions?.keys)")
+                        
+                        let view = self?.mapper.map(viewModel: viewModel)
+                        view?.translatesAutoresizingMaskIntoConstraints = false
+                        
+                        if let view = view {
+                            self?.view.addSubview(view)
+                            
+                            NSLayoutConstraint.activate([
+                                view.topAnchor.constraint(equalTo: self?.view.safeAreaLayoutGuide.topAnchor ?? NSLayoutYAxisAnchor()),
+                                view.leadingAnchor.constraint(equalTo: self?.view.leadingAnchor ?? NSLayoutXAxisAnchor()),
+                                view.trailingAnchor.constraint(equalTo: self?.view.trailingAnchor ?? NSLayoutXAxisAnchor()),
+                                view.bottomAnchor.constraint(equalTo: self?.view.safeAreaLayoutGuide.bottomAnchor ?? NSLayoutYAxisAnchor())
+                            ])
+                        }
+                    } catch {
+                        print("Decoding error: \(error)")
+                        self?.showErrorView()
+                    }
+                case .failure(let error):
+                    print("Network error: \(error)")
+                    self?.showErrorView()
+                }
             }
-        } else {
-            showErrorView()
         }
     }
     
-    private func loadJSONFromFile(named filename: String) -> Data? {
-        guard let path = Bundle.main.path(forResource: filename, ofType: "json") else {
-            print("Файл \(filename).json не найден в bundle")
-            return nil
+    private func loadJSONFromServer(completion: @escaping (Result<Data, Error>) -> Void) {
+        let urlString = "https://alfa-itmo.ru/server/v1/storage/banking-services-zelen"
+        guard let url = URL(string: urlString) else {
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
         }
         
-        do {
-            let data = try Data(contentsOf: URL(fileURLWithPath: path))
-            print("Успешно загружен JSON файл \(filename).json, размер: \(data.count) байт")
-            return data
-        } catch {
-            print("Ошибка загрузки JSON файла \(filename).json: \(error)")
-            return nil
+        let username = "368200"
+        let password = "Zy-AJ9NqXOnv"
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let loginString = "\(username):\(password)"
+        guard let loginData = loginString.data(using: .utf8) else {
+            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Auth encoding failed"])))
+            return
         }
+        let base64LoginString = loginData.base64EncodedString()
+        request.setValue("Basic \(base64LoginString)", forHTTPHeaderField: "Authorization")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                return
+            }
+            
+            guard (200...299).contains(httpResponse.statusCode) else {
+                completion(.failure(NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server returned status code \(httpResponse.statusCode)"])))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
+                return
+            }
+            
+            completion(.success(data))
+        }
+        
+        task.resume()
     }
     
     private func showErrorView() {
