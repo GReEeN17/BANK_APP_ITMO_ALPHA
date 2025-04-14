@@ -5,6 +5,7 @@ class RegistrationViewController: UIViewController {
     private let viewModel: RegistrationViewModelProtocol
     private let router: RouterProtocol
     private var cancellables = Set<AnyCancellable>()
+    
     private let stackView = DSStackView(spacing: DSSpacing.large)
     private let emailTextField = DSTextField()
     private let usernameTextField = DSTextField()

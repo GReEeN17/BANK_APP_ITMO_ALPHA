@@ -20,6 +20,16 @@ final class BalanceViewController: UIViewController {
         return label
     }()
     
+    private lazy var servicesButton: DSButton = {
+        let button = DSButton()
+        button.configure(with: DSButtonViewModel(
+            title: "Bank Services",
+            type: .primary
+        ))
+        button.addTarget(self, action: #selector(servicesButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
     private lazy var transactionsLabel: DSLabel = {
         let label = DSLabel()
         label.configure(with: DSLabelViewModel(
@@ -61,6 +71,7 @@ final class BalanceViewController: UIViewController {
         button.addTarget(self, action: #selector(loadMoreButtonTapped), for: .touchUpInside)
         return button
     }()
+    
     init(viewModel: BalanceViewModelProtocol, user: User, router: RouterProtocol) {
         self.viewModel = viewModel
         self.user = user
@@ -100,12 +111,14 @@ final class BalanceViewController: UIViewController {
         stackView.addArrangedSubview(transactionsLabel)
         stackView.addArrangedSubview(currencyLabel)
         stackView.addArrangedSubview(transferButton)
+        stackView.addArrangedSubview(servicesButton)
         stackView.addArrangedSubview(loadMoreButton)
         
         stackView.setCustomSpacing(DSSpacing.xLarge, after: balanceLabel)
         stackView.setCustomSpacing(DSSpacing.xLarge, after: transactionsLabel)
         stackView.setCustomSpacing(DSSpacing.xLarge, after: currencyLabel)
         stackView.setCustomSpacing(DSSpacing.large, after: transferButton)
+        stackView.setCustomSpacing(DSSpacing.large, after: servicesButton)
         
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: DSSpacing.xLarge),
@@ -116,9 +129,11 @@ final class BalanceViewController: UIViewController {
             transactionsLabel.widthAnchor.constraint(equalTo: stackView.widthAnchor),
             currencyLabel.widthAnchor.constraint(equalTo: stackView.widthAnchor),
             transferButton.widthAnchor.constraint(equalTo: stackView.widthAnchor),
+            servicesButton.widthAnchor.constraint(equalTo: stackView.widthAnchor),
             loadMoreButton.widthAnchor.constraint(equalTo: stackView.widthAnchor),
             
             transferButton.heightAnchor.constraint(equalToConstant: 44),
+            servicesButton.heightAnchor.constraint(equalToConstant: 44),
             loadMoreButton.heightAnchor.constraint(equalToConstant: 44)
         ])
     }
@@ -205,5 +220,9 @@ final class BalanceViewController: UIViewController {
     
     @objc private func profileButtonTapped() {
         router?.showProfileScreen(user: user)
+    }
+    
+    @objc private func servicesButtonTapped() {
+        router?.showBankingServicesScreen(user: user)
     }
 }
