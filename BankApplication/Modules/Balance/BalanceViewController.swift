@@ -223,6 +223,7 @@ final class BalanceViewController: UIViewController {
     }
     
     @objc private func servicesButtonTapped() {
-        router?.showBankingServicesScreen(user: user)
+        let customEndpoint = URL(string: "https://alfa-itmo.ru/server/v1/storage/banking-services-zelen")!
+        router?.showBankingServicesScreen(user: user, endpointURL: customEndpoint)
     }
 }

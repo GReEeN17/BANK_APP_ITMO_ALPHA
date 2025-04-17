@@ -3,8 +3,9 @@ import UIKit
 class BankingServicesViewController: UIViewController {
     private let mapper: BDUIViewMapper
     private let actionHandler: BDUIActionHandler
+    private let endpointURL: URL
     
-    init(router: Router, user: User) {
+    init(router: Router, user: User, endpointURL: URL) {
         let tempActionHandler = BDUIActionHandler(
             router: router,
             user: user
@@ -16,6 +17,7 @@ class BankingServicesViewController: UIViewController {
         
         self.mapper = mapper
         self.actionHandler = tempActionHandler
+        self.endpointURL = endpointURL
         
         super.init(nibName: nil, bundle: nil)
         
@@ -74,16 +76,10 @@ class BankingServicesViewController: UIViewController {
     }
     
     private func loadJSONFromServer(completion: @escaping (Result<Data, Error>) -> Void) {
-        let urlString = "https://alfa-itmo.ru/server/v1/storage/banking-services-zelen"
-        guard let url = URL(string: urlString) else {
-            completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
-            return
-        }
-        
         let username = "368200"
         let password = "Zy-AJ9NqXOnv"
         
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: endpointURL)
         request.httpMethod = "GET"
         
         let loginString = "\(username):\(password)"
