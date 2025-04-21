@@ -60,8 +60,13 @@ final class Router: RouterProtocol {
         navigationController?.pushViewController(transferVC, animated: true)
     }
     
-    func showBankingServicesScreen(user: User) {
-        let viewController = BankingServicesViewController(router: self, user: user)
+    func showBankingServicesScreen(user: User, endpointURL: URL? = nil) {
+        let defaultURL = URL(string: "https://alfa-itmo.ru/server/v1/storage/banking-services-zelen")!
+        let viewController = BankingServicesViewController(
+            router: self,
+            user: user,
+            endpointURL: endpointURL ?? defaultURL
+        )
         navigationController?.pushViewController(viewController, animated: true)
     }
    
